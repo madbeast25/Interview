@@ -1,0 +1,19 @@
+Interview project All links 
+
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_aW50aW1hdGUtY29sdC04LmNsZXJrLmFjY291bnRzLmRldiQ
+CLERK_SECRET_KEY=sk_test_enaL5uJJP8tFUpD9ffZDA76pPpaaRW3OD3jddpcvPz
+
+CONVEX_DEPLOYMENT=dev:accurate-elk-583 
+
+NEXT_PUBLIC_CONVEX_URL=https://accurate-elk-583.convex.cloud
+
+STREAM_API_KEY=m5rxpe93eh8r
+STREAM_SECRET_KEY=6czq25khmu9dsprnawfvyrddkkt3egjfw36dazwtj5j4fccuu9d5a8vkhnb5732s
+
+CLERK_JWT_ISUSER=https://intimate-colt-8.clerk.accounts.dev
+
+WEBHOOK_ENDPOINT_URL=https://accurate-elk-583.convex.site/clerk-webhook
+WEBHOOK_SIGNIN_SECRET=whsec_J6Er4amVikHPiQNrmQayuH1BskrMMa8p
+
+progress 2:07:58
+meeting page under the root folder

@@ -60,6 +60,7 @@ import {
                   <CallControls onLeave={() => router.push("/")} />
   
                   <div className="flex items-center gap-2">
+                      <EndCallButton />
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="icon" className="size-10">
@@ -85,7 +86,7 @@ import {
                       <UsersIcon className="size-4" />
                     </Button>
   
-                    <EndCallButton />
+                    
                   </div>
                 </div>
               </div>

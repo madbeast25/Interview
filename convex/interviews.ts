@@ -1,70 +1,82 @@
-import { mutation, query } from "./_generated/server";
-import { v } from "convex/values";
+import { useCall, useCallStateHooks } from "@stream-io/video-react-sdk";
+import { useMutation, useQuery } from "convex/react";
+import { useRouter } from "next/navigation";
+import { api } from "../../convex/_generated/api";
+import { Button } from "./ui/Button";
+import toast from "react-hot-toast";
+import { useEffect } from "react";
 
-export const getAllInterviews = query({
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+function EndCallButton() {
+  const call = useCall();
+  const router = useRouter();
+  const { useLocalParticipant } = useCallStateHooks();
+  const localParticipant = useLocalParticipant();
 
-    const interviews = await ctx.db.query("interviews").collect();
+  const updateInterviewStatus = useMutation(api.interviews.updateInterviewStatus);
+  const createInterview = useMutation(api.interviews.createInterview);
 
-    return interviews;
-  },
-});
+  const interview = useQuery(api.interviews.getInterviewByStreamCallId, {
+    streamCallId: call?.id || "",
+  });
 
-export const getMyInterviews = query({
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return [];
+  // ✅ Auto-create interview if not found
+  useEffect(() => {
+    const maybeCreateInterview = async () => {
+      if (!call || interview !== null) return;
 
-    const interviews = await ctx.db
-      .query("interviews")
-      .withIndex("by_candidate_id", (q) => q.eq("candidateId", identity.subject))
-      .collect();
+      console.log("📢 Interview not found. Creating one...");
+      try {
+        await createInterview({
+          title: "Untitled Interview",
+          description: "Auto-generated",
+          startTime: Date.now(),
+          status: "live",
+          streamCallId: call.id,
+          candidateId: localParticipant?.userId || "unknown_candidate",
+          interviewerIds: [], // optionally insert current user or others
+        });
 
-    return interviews!;
-  },
-});
+        toast.success("Interview auto-created!");
+      } catch (err) {
+        console.error("❌ Failed to auto-create interview:", err);
+        toast.error("Failed to auto-create interview");
+      }
+    };
 
-export const getInterviewByStreamCallId = query({
-  args: { streamCallId: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("interviews")
-      .withIndex("by_stream_call_id", (q) => q.eq("streamCallId", args.streamCallId))
-      .first();
-  },
-});
+    maybeCreateInterview();
+  }, [call, interview, createInterview, localParticipant]);
 
-export const createInterview = mutation({
-  args: {
-    title: v.string(),
-    description: v.optional(v.string()),
-    startTime: v.number(),
-    status: v.string(),
-    streamCallId: v.string(),
-    candidateId: v.string(),
-    interviewerIds: v.array(v.string()),
-  },
-  handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
+  // Still waiting for interview to load
+  if (!call || interview === undefined) return null;
 
-    return await ctx.db.insert("interviews", {
-      ...args,
-    });
-  },
-});
+  // Still not created or failed to fetch
+  if (!interview) return null;
 
-export const updateInterviewStatus = mutation({
-  args: {
-    id: v.id("interviews"),
-    status: v.string(),
-  },
-  handler: async (ctx, args) => {
-    return await ctx.db.patch(args.id, {
-      status: args.status,
-      ...(args.status === "completed" ? { endTime: Date.now() } : {}),
-    });
-  },
-});
+  const isMeetingOwner = localParticipant?.userId === call.state.createdBy?.id;
+  if (!isMeetingOwner) return null;
+
+  const endCall = async () => {
+    try {
+      await call.endCall();
+
+      await updateInterviewStatus({
+        id: interview._id,
+        status: "completed",
+      });
+
+      router.push("/");
+      toast.success("Meeting ended for everyone");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to end meeting");
+    }
+  };
+
+  return (
+    <Button variant="destructive" onClick={endCall}>
+      End Meeting
+    </Button>
+  );
+}
+
+export default EndCallButton;

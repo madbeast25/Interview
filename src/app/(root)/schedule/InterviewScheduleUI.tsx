@@ -50,6 +50,7 @@ function InterviewScheduleUI() {
   });
 
   const scheduleMeeting = async () => {
+    if (isCreating) return;
     if (!client || !user) return;
     if (!formData.candidateId || formData.interviewerIds.length === 0) {
       toast.error("Please select both candidate and at least one interviewer");
@@ -62,14 +63,13 @@ function InterviewScheduleUI() {
       const { title, description, date, time, candidateId, interviewerIds } = formData;
       const [hours, minutes] = time.split(":");
       const meetingDate = new Date(date);
-      meetingDate.setHours(parseInt(hours), parseInt(minutes), 0);
+      meetingDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
-      // Check if the selected time slot is available for the candidate
       const isSlotTaken = interviews.some((interview) => {
         const interviewTime = new Date(interview.startTime);
         return (
           interview.candidateId === candidateId &&
-          interviewTime.toISOString() === meetingDate.toISOString()
+          interviewTime.getTime() === meetingDate.getTime()
         );
       });
 
@@ -103,7 +103,6 @@ function InterviewScheduleUI() {
 
       setOpen(false);
       toast.success("Meeting scheduled successfully!");
-
       setFormData({
         title: "",
         description: "",
@@ -148,16 +147,14 @@ function InterviewScheduleUI() {
   return (
     <div className="container max-w-7xl mx-auto p-6 space-y-8">
       <div className="flex items-center justify-between">
-        {/* HEADER INFO */}
         <div>
           <h1 className="text-3xl font-bold">Interviews</h1>
           <p className="text-muted-foreground mt-1">Schedule and manage interviews</p>
         </div>
 
-        {/* DIALOG */}
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="lg">Schedule Interview</Button>
+            <Button size="lg" aria-label="Schedule Interview">Schedule Interview</Button>
           </DialogTrigger>
 
           <DialogContent className="sm:max-w-[500px] h-[calc(100vh-200px)] overflow-auto">
@@ -165,7 +162,6 @@ function InterviewScheduleUI() {
               <DialogTitle>Schedule Interview</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              {/* INTERVIEW TITLE */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Title</label>
                 <Input
@@ -175,7 +171,6 @@ function InterviewScheduleUI() {
                 />
               </div>
 
-              {/* INTERVIEW DESC */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Description</label>
                 <Textarea
@@ -186,7 +181,6 @@ function InterviewScheduleUI() {
                 />
               </div>
 
-              {/* CANDIDATE */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Candidate</label>
                 <Select
@@ -206,7 +200,6 @@ function InterviewScheduleUI() {
                 </Select>
               </div>
 
-              {/* INTERVIEWERS */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Interviewers</label>
                 <div className="flex flex-wrap gap-2 mb-2">
@@ -220,6 +213,7 @@ function InterviewScheduleUI() {
                         <button
                           onClick={() => removeInterviewer(interviewer.clerkId)}
                           className="hover:text-destructive transition-colors"
+                          aria-label="Remove Interviewer"
                         >
                           <XIcon className="h-4 w-4" />
                         </button>
@@ -243,9 +237,7 @@ function InterviewScheduleUI() {
                 )}
               </div>
 
-              {/* DATE & TIME */}
               <div className="flex gap-4">
-                {/* CALENDAR */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Date</label>
                   <Calendar
@@ -257,7 +249,6 @@ function InterviewScheduleUI() {
                   />
                 </div>
 
-                {/* TIME */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Time</label>
                   <Select
@@ -278,7 +269,6 @@ function InterviewScheduleUI() {
                 </div>
               </div>
 
-              {/* ACTION BUTTONS */}
               <div className="flex justify-end gap-3 pt-4">
                 <Button variant="outline" onClick={() => setOpen(false)}>
                   Cancel
@@ -299,23 +289,21 @@ function InterviewScheduleUI() {
         </Dialog>
       </div>
 
-      {/* LOADING STATE & MEETING CARDS */}
-      {!interviews ? (
+      {interviews === undefined ? (
         <div className="flex justify-center py-12">
           <Loader2Icon className="size-8 animate-spin text-muted-foreground" />
         </div>
       ) : interviews.length > 0 ? (
-        <div className="space-y-4">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {interviews.map((interview) => (
-              <MeetingCard key={interview._id} interview={interview} />
-            ))}
-          </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {interviews.map((interview) => (
+            <MeetingCard key={interview._id} interview={interview} />
+          ))}
         </div>
       ) : (
-        <div className="text-center py-12 text-muted-foreground">No interviews scheduled</div>
+        <div className="text-center py-12 text-muted-foreground">No interviews scheduled yet.</div>
       )}
     </div>
   );
 }
+
 export default InterviewScheduleUI;
